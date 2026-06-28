@@ -7,112 +7,91 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #f0f4f8; min-height: 100vh; }
-  .header {
-    background: linear-gradient(135deg, #1a1a2e, #0f3460);
-    color: #fff; padding: 16px 24px;
-    display: flex; align-items: center; justify-content: space-between;
-  }
+  .header { background: linear-gradient(135deg, #1a1a2e, #0f3460); color: #fff; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
   .header h1 { font-size: 18px; }
-  .header a { color: #aad4f5; font-size: 13px; text-decoration: none; }
+  .header-links { display: flex; gap: 14px; align-items: center; }
+  .header-links a { color: #aad4f5; font-size: 13px; text-decoration: none; }
+  .btn-pw { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3); padding: 5px 12px; border-radius: 7px; font-size: 13px; cursor: pointer; }
+  .btn-pw:hover { background: rgba(255,255,255,0.25); }
   .container { max-width: 700px; margin: 24px auto; padding: 0 16px; }
-
-  /* تبويبات الأيام */
-  .days-nav {
-    display: flex; gap: 6px; flex-wrap: wrap;
-    margin-bottom: 20px;
-  }
-  .day-btn {
-    padding: 8px 14px; border-radius: 8px; border: 2px solid #e0e0e0;
-    background: #fff; font-size: 13px; cursor: pointer;
-    transition: all 0.15s; color: #555; text-decoration: none;
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
-  }
-  .day-btn:hover { border-color: #0f3460; color: #0f3460; }
-  .day-btn.active { background: #0f3460; color: #fff; border-color: #0f3460; }
-  .day-btn.today-btn { border-color: #28a745; }
-  .day-btn.today-btn.active { background: #28a745; border-color: #28a745; }
-  .day-btn .day-name { font-weight: 700; font-size: 13px; }
-  .day-btn .day-date { font-size: 11px; opacity: 0.8; }
-  .day-btn .day-status { font-size: 10px; margin-top: 2px; }
-
   .flash { padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; }
   .flash.success { background: #d4edda; color: #155724; }
   .flash.error   { background: #f8d7da; color: #721c24; }
-
-  .card {
-    background: #fff; border-radius: 14px;
-    padding: 20px; margin-bottom: 20px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-  }
-  .card-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 16px; border-bottom: 2px solid #f0f4f8; padding-bottom: 10px;
-    flex-wrap: wrap; gap: 8px;
-  }
+  .card { background: #fff; border-radius: 14px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; border-bottom: 2px solid #f0f4f8; padding-bottom: 10px; flex-wrap: wrap; gap: 8px; }
   .card-header h2 { font-size: 16px; color: #1a1a2e; }
-  .selected-date-badge {
-    background: #e8f0fe; color: #1a56db;
-    padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;
-  }
+  .selected-date-badge { background: #e8f0fe; color: #1a56db; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
   .selected-date-badge.today { background: #d4edda; color: #155724; }
 
-  .wird-row {
-    display: flex; align-items: center;
-    justify-content: space-between;
-    padding: 12px 0;
-    border-bottom: 1px solid #f5f5f5;
-    gap: 10px; flex-wrap: wrap;
-  }
-  .wird-name { flex: 1; font-size: 14px; color: #333; min-width: 150px; }
-  .options { display: flex; gap: 6px; }
-  .opt-label {
-    display: flex; align-items: center; gap: 4px;
-    padding: 6px 10px; border-radius: 8px;
-    border: 2px solid #e0e0e0; cursor: pointer;
-    font-size: 12px; transition: all 0.15s; user-select: none;
-  }
-  .opt-label input { display: none; }
-  .opt-label.ada2:has(input:checked)    { background: #d4edda; border-color: #28a745; color: #155724; font-weight: 700; }
-  .opt-label.qadaa:has(input:checked)   { background: #fff3cd; border-color: #ffc107; color: #856404; font-weight: 700; }
-  .opt-label.gharama:has(input:checked) { background: #f8d7da; border-color: #dc3545; color: #721c24; font-weight: 700; }
-  .save-btn {
-    width: 100%; padding: 14px;
-    background: #0f3460; color: #fff;
-    border: none; border-radius: 10px;
-    font-size: 16px; font-weight: 700;
-    cursor: pointer; transition: background 0.2s; margin-top: 8px;
-  }
-  .save-btn:hover { background: #1a4a8a; }
-
-  /* ملخص الأسبوع */
-  .week-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
-    gap: 10px; margin-top: 4px;
-  }
-  .week-day-card {
-    border-radius: 10px; padding: 10px 8px; text-align: center;
-    border: 2px solid #e0e0e0; background: #fafafa;
-    cursor: pointer; transition: all 0.15s; text-decoration: none; color: inherit;
-    display: block;
-  }
+  /* كروت الأيام */
+  .week-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(85px, 1fr)); gap: 10px; margin-top: 4px; }
+  .week-day-card { border-radius: 10px; padding: 10px 8px; text-align: center; border: 2px solid #e0e0e0; background: #fafafa; cursor: pointer; transition: all 0.15s; text-decoration: none; color: inherit; display: block; }
   .week-day-card:hover { border-color: #0f3460; transform: translateY(-2px); }
   .week-day-card.selected { border-color: #0f3460; background: #e8f0fe; }
   .week-day-card.today-card { border-color: #28a745; }
   .week-day-card.complete  { background: #d4edda; border-color: #28a745; }
-  .week-day-card.partial   { background: #fff3cd; border-color: #ffc107; }
-  .week-day-card.has-gharama { background: #fde8e8; border-color: #dc3545; }
+  .week-day-card.partial   { background: #fff9e6; border-color: #ffc107; }
+  .week-day-card.has-gh    { background: #fde8e8; border-color: #dc3545; }
   .week-day-card.empty     { background: #f5f5f5; border-color: #ddd; }
-  .wdc-name  { font-size: 12px; font-weight: 700; color: #333; }
-  .wdc-date  { font-size: 10px; color: #888; margin: 2px 0; }
+  .wdc-name { font-size: 12px; font-weight: 700; color: #333; }
+  .wdc-date { font-size: 10px; color: #888; margin: 2px 0; }
+  .wdc-pct  { font-size: 14px; font-weight: 700; color: #333; margin-top: 4px; }
   .wdc-stats { font-size: 11px; margin-top: 4px; }
-  .wdc-pct   { font-size: 14px; font-weight: 700; color: #333; margin-top: 4px; }
+
+  /* الأوراد */
+  .wird-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f5f5f5; gap: 10px; flex-wrap: wrap; }
+  .wird-name { flex: 1; font-size: 14px; color: #333; min-width: 150px; }
+  .options { display: flex; gap: 6px; }
+  .opt-label { display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 8px; border: 2px solid #e0e0e0; cursor: pointer; font-size: 12px; transition: all 0.15s; user-select: none; }
+  .opt-label input { display: none; }
+  .opt-label.ada2:has(input:checked)    { background: #d4edda; border-color: #28a745; color: #155724; font-weight: 700; }
+  .opt-label.qadaa:has(input:checked)   { background: #fff3cd; border-color: #ffc107; color: #856404; font-weight: 700; }
+  .opt-label.gharama:has(input:checked) { background: #f8d7da; border-color: #dc3545; color: #721c24; font-weight: 700; }
+  .save-btn { width: 100%; padding: 14px; background: #0f3460; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
+  .save-btn:hover { background: #1a4a8a; }
+
+  /* Modal تغيير كلمة السر */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: 16px; padding: 28px; width: 340px; max-width: 95vw; }
+  .modal h3 { font-size: 17px; color: #1a1a2e; margin-bottom: 18px; }
+  .modal label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; font-weight: 600; }
+  .modal input { width: 100%; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 14px; direction: ltr; }
+  .modal input:focus { outline: none; border-color: #0f3460; }
+  .modal-btns { display: flex; gap: 10px; }
+  .modal-btns button { flex: 1; padding: 11px; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; }
+  .btn-confirm { background: #0f3460; color: #fff; }
+  .btn-cancel  { background: #f0f0f0; color: #555; }
 </style>
 </head>
 <body>
+
+<!-- Modal تغيير كلمة السر -->
+<div class="modal-overlay" id="pwModal">
+  <div class="modal">
+    <h3>🔑 تغيير كلمة السر</h3>
+    <form method="POST">
+      <input type="hidden" name="action" value="change_password">
+      <label>كلمة السر الحالية</label>
+      <input type="password" name="old_password" required placeholder="••••••••">
+      <label>كلمة السر الجديدة</label>
+      <input type="password" name="new_password" required placeholder="••••••••" minlength="4">
+      <label>تأكيد كلمة السر الجديدة</label>
+      <input type="password" name="new_password2" required placeholder="••••••••" minlength="4">
+      <div class="modal-btns">
+        <button type="submit" class="btn-confirm">حفظ</button>
+        <button type="button" class="btn-cancel" onclick="closeModal()">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="header">
   <h1>🌙 أوراد {{ session.username }}</h1>
-  <a href="/logout">خروج ↩</a>
+  <div class="header-links">
+    <button class="btn-pw" onclick="openModal()">🔑 تغيير كلمة السر</button>
+    <a href="/logout">خروج ↩</a>
+  </div>
 </div>
 
 <div class="container">
@@ -120,29 +99,22 @@
     <div class="flash {{ cat }}">{{ msg }}</div>
   {% endfor %}
 
-  <!-- ملخص الأسبوع بالكروت -->
+  <!-- كروت الأيام -->
   <div class="card">
     <div class="card-header">
-      <h2>📅 أيام الأسبوع — اختار يوم تسجّل فيه</h2>
+      <h2>📅 اختار اليوم</h2>
     </div>
     <div class="week-grid">
       {% for day in stats %}
         {% set total = wirds|length %}
         {% set done = day.ada2 + day.qadaa + day.gharama %}
         {% set pct = ((day.ada2 / total) * 100)|int if total > 0 else 0 %}
-        {% if done == 0 %}
-          {% set card_class = 'empty' %}
-        {% elif day.gharama > 0 %}
-          {% set card_class = 'has-gharama' %}
-        {% elif day.ada2 == total %}
-          {% set card_class = 'complete' %}
-        {% else %}
-          {% set card_class = 'partial' %}
-        {% endif %}
+        {% if done == 0 %}{% set cc = 'empty' %}
+        {% elif day.gharama > 0 %}{% set cc = 'has-gh' %}
+        {% elif day.ada2 == total %}{% set cc = 'complete' %}
+        {% else %}{% set cc = 'partial' %}{% endif %}
         <a href="?date={{ day.date.strftime('%Y-%m-%d') }}"
-           class="week-day-card {{ card_class }}
-                  {% if day.date == selected_date %} selected{% endif %}
-                  {% if day.date == today %} today-card{% endif %}">
+           class="week-day-card {{ cc }}{% if day.date == selected_date %} selected{% endif %}{% if day.date == today %} today-card{% endif %}">
           <div class="wdc-name">{{ day.date.strftime('%A')|replace('Monday','الاثنين')|replace('Tuesday','الثلاثاء')|replace('Wednesday','الأربعاء')|replace('Thursday','الخميس')|replace('Friday','الجمعة')|replace('Saturday','السبت')|replace('Sunday','الأحد') }}</div>
           <div class="wdc-date">{{ day.date.strftime('%d/%m') }}</div>
           {% if done > 0 %}
@@ -160,19 +132,18 @@
     </div>
   </div>
 
-  <!-- نموذج تسجيل اليوم المختار -->
+  <!-- تسجيل الأوراد -->
   <div class="card">
     <div class="card-header">
       <h2>📝 تسجيل الأوراد</h2>
       <span class="selected-date-badge {% if selected_date == today %}today{% endif %}">
-        {% if selected_date == today %}📍 اليوم {% endif %}
+        {% if selected_date == today %}📍 اليوم — {% endif %}
         {{ selected_date.strftime('%A')|replace('Monday','الاثنين')|replace('Tuesday','الثلاثاء')|replace('Wednesday','الأربعاء')|replace('Thursday','الخميس')|replace('Friday','الجمعة')|replace('Saturday','السبت')|replace('Sunday','الأحد') }}
         {{ selected_date.strftime('%d/%m/%Y') }}
       </span>
     </div>
-
-    {% if in_period %}
     <form method="POST">
+      <input type="hidden" name="action" value="save_wirds">
       <input type="hidden" name="record_date" value="{{ selected_date.strftime('%Y-%m-%d') }}">
       {% for wird in wirds %}
       <div class="wird-row">
@@ -180,32 +151,30 @@
         <div class="options">
           <label class="opt-label ada2">
             <input type="radio" name="wird_{{ wird.id }}" value="ada2"
-              {% if records_selected.get(wird.id) == 'ada2' %}checked{% endif %}>
-            ✅ أداء
+              {% if records_selected.get(wird.id) == 'ada2' %}checked{% endif %}>✅ أداء
           </label>
           <label class="opt-label qadaa">
             <input type="radio" name="wird_{{ wird.id }}" value="qadaa"
-              {% if records_selected.get(wird.id) == 'qadaa' %}checked{% endif %}>
-            ⏰ قضاء
+              {% if records_selected.get(wird.id) == 'qadaa' %}checked{% endif %}>⏰ قضاء
           </label>
           <label class="opt-label gharama">
             <input type="radio" name="wird_{{ wird.id }}" value="gharama"
-              {% if records_selected.get(wird.id) == 'gharama' %}checked{% endif %}>
-            💰 غرامة
+              {% if records_selected.get(wird.id) == 'gharama' %}checked{% endif %}>💰 غرامة
           </label>
         </div>
       </div>
       {% endfor %}
       <button type="submit" class="save-btn">💾 حفظ أوراد {{ selected_date.strftime('%d/%m') }}</button>
     </form>
-    {% else %}
-    <div style="text-align:center; padding:30px; color:#888;">
-      ⏳ الأوراد بتبدأ من {{ START_DATE.strftime('%d/%m/%Y') }}
-      وبتخلص في {{ END_DATE.strftime('%d/%m/%Y') }}
-    </div>
-    {% endif %}
   </div>
-
 </div>
+
+<script>
+function openModal()  { document.getElementById('pwModal').classList.add('open'); }
+function closeModal() { document.getElementById('pwModal').classList.remove('open'); }
+document.getElementById('pwModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
 </body>
 </html>

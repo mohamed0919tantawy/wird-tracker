@@ -10,39 +10,82 @@
   .header { background: linear-gradient(135deg, #4a148c, #1a1a2e); color: #fff; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
   .header h1 { font-size: 18px; }
   .header a { color: #ce93d8; font-size: 13px; text-decoration: none; }
-  .container { max-width: 800px; margin: 24px auto; padding: 0 16px; }
+  .container { max-width: 860px; margin: 24px auto; padding: 0 16px; }
   .card { background: #fff; border-radius: 14px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
   .card h2 { font-size: 16px; color: #1a1a2e; margin-bottom: 16px; border-bottom: 2px solid #f0f4f8; padding-bottom: 10px; }
-  .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
-  input[type=text], input[type=password], select {
-    padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px;
-    font-size: 14px; flex: 1; min-width: 140px; direction: rtl;
-  }
-  input:focus, select:focus { outline: none; border-color: #4a148c; }
-  .btn { padding: 10px 18px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-  .btn-primary { background: #0f3460; color: #fff; }
-  .btn-primary:hover { background: #1a4a8a; }
-  .btn-danger  { background: #dc3545; color: #fff; }
-  .btn-danger:hover  { background: #b02a37; }
-  .btn-edit    { background: #ffc107; color: #333; }
-  .btn-edit:hover    { background: #e0a800; }
-  .list-item {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 12px; border: 1px solid #f0f0f0; border-radius: 8px;
-    margin-bottom: 8px; gap: 10px; flex-wrap: wrap;
-  }
-  .item-name { flex: 1; font-size: 14px; }
-  .role-badge { font-size: 11px; padding: 3px 8px; border-radius: 5px; font-weight: 700; }
-  .role-admin { background: #e3f2fd; color: #1565c0; }
-  .role-user  { background: #e8f5e9; color: #2e7d32; }
   .flash { padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; font-size: 14px; }
   .flash.success { background: #d4edda; color: #155724; }
   .flash.error   { background: #f8d7da; color: #721c24; }
-  .edit-form { display: flex; gap: 8px; flex-wrap: wrap; }
+  input[type=text], input[type=password], select { padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; direction: rtl; }
+  input:focus, select:focus { outline: none; border-color: #4a148c; }
+  .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .form-row input, .form-row select { flex: 1; min-width: 130px; }
+  .btn { padding: 10px 18px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+  .btn-primary { background: #4a148c; color: #fff; }
+  .btn-primary:hover { background: #6a1cbc; }
+  .btn-danger  { background: #dc3545; color: #fff; }
+  .btn-danger:hover { background: #b02a37; }
+  .btn-edit    { background: #ffc107; color: #333; }
+  .btn-edit:hover { background: #e0a800; }
+  .btn-pw { background: #0f3460; color: #fff; }
+  .btn-pw:hover { background: #1a4a8a; }
+
+  /* جدول المستخدمين */
+  .users-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .users-table th { background: #f0f4f8; padding: 10px 12px; text-align: right; font-size: 13px; color: #555; }
+  .users-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+  .users-table tr:hover { background: #fafafa; }
+  .role-badge { font-size: 11px; padding: 3px 9px; border-radius: 5px; font-weight: 700; }
+  .role-admin { background: #e3f2fd; color: #1565c0; }
+  .role-user  { background: #e8f5e9; color: #2e7d32; }
+
+  /* عرض كلمة السر */
+  .pw-cell { display: flex; align-items: center; gap: 8px; }
+  .pw-text { font-family: monospace; font-size: 13px; background: #f5f5f5; padding: 3px 8px; border-radius: 5px; letter-spacing: 1px; color: #333; }
+  .pw-hidden { filter: blur(4px); user-select: none; cursor: pointer; transition: filter 0.2s; }
+  .pw-hidden:hover { filter: none; }
+
+  /* Modal تغيير كلمة السر */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: 16px; padding: 28px; width: 340px; max-width: 95vw; }
+  .modal h3 { font-size: 17px; color: #1a1a2e; margin-bottom: 6px; }
+  .modal .modal-username { font-size: 13px; color: #888; margin-bottom: 16px; }
+  .modal label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; font-weight: 600; }
+  .modal input { width: 100%; padding: 10px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 16px; direction: ltr; }
+  .modal input:focus { outline: none; border-color: #4a148c; }
+  .modal-btns { display: flex; gap: 10px; }
+  .modal-btns button { flex: 1; padding: 11px; border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; }
+  .btn-confirm { background: #4a148c; color: #fff; }
+  .btn-cancel  { background: #f0f0f0; color: #555; }
+
+  /* الأوراد */
+  .wird-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 8px; gap: 10px; flex-wrap: wrap; }
+  .wird-item .wird-name { flex: 1; font-size: 14px; }
+  .edit-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .edit-form input { min-width: 180px; }
 </style>
 </head>
 <body>
+
+<!-- Modal تغيير كلمة السر -->
+<div class="modal-overlay" id="pwModal">
+  <div class="modal">
+    <h3>🔑 تغيير كلمة السر</h3>
+    <p class="modal-username" id="modalUsername"></p>
+    <form method="POST">
+      <input type="hidden" name="action" value="reset_password">
+      <input type="hidden" name="user_id" id="modalUserId">
+      <label>كلمة السر الجديدة</label>
+      <input type="text" name="new_password" id="modalNewPw" required placeholder="اكتب كلمة السر الجديدة" minlength="4">
+      <div class="modal-btns">
+        <button type="submit" class="btn-confirm">حفظ</button>
+        <button type="button" class="btn-cancel" onclick="closeModal()">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="header">
   <h1>👑 لوحة تحكم صاحب النظام</h1>
   <a href="/logout">خروج ↩</a>
@@ -60,7 +103,7 @@
       <input type="hidden" name="action" value="add_user">
       <div class="form-row">
         <input type="text" name="username" placeholder="اسم المستخدم" required>
-        <input type="password" name="password" placeholder="كلمة السر" required>
+        <input type="text" name="password" placeholder="كلمة السر" required>
         <select name="role">
           <option value="user">مستخدم عادي</option>
           <option value="admin">أدمن</option>
@@ -73,54 +116,102 @@
   <!-- قائمة المستخدمين -->
   <div class="card">
     <h2>👥 المستخدمون ({{ users|length }})</h2>
-    {% for user in users %}
-    <div class="list-item">
-      <span class="item-name">{{ user.username }}</span>
-      <span class="role-badge {{ 'role-admin' if user.role == 'admin' else 'role-user' }}">
-        {{ 'أدمن' if user.role == 'admin' else 'مستخدم' }}
-      </span>
-      <form method="POST" onsubmit="return confirm('تأكد إنك عايز تمسح {{ user.username }}؟')">
-        <input type="hidden" name="action" value="delete_user">
-        <input type="hidden" name="user_id" value="{{ user.id }}">
-        <button type="submit" class="btn btn-danger">حذف</button>
-      </form>
+    {% if users %}
+    <div style="overflow-x:auto;">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>الاسم</th>
+            <th>كلمة السر</th>
+            <th>الدور</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td><strong>{{ user.username }}</strong></td>
+            <td>
+              <div class="pw-cell">
+                <span class="pw-text pw-hidden" onclick="this.classList.toggle('pw-hidden')"
+                      title="اضغط لإظهار كلمة السر">
+                  {{ user.plain_password if user.plain_password else '——' }}
+                </span>
+              </div>
+            </td>
+            <td>
+              <span class="role-badge {{ 'role-admin' if user.role == 'admin' else 'role-user' }}">
+                {{ 'أدمن' if user.role == 'admin' else 'مستخدم' }}
+              </span>
+            </td>
+            <td>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="btn btn-pw"
+                        onclick="openModal({{ user.id }}, '{{ user.username }}', '{{ user.plain_password }}')">
+                  🔑 تغيير السر
+                </button>
+                <form method="POST" onsubmit="return confirm('حذف {{ user.username }}؟')">
+                  <input type="hidden" name="action" value="delete_user">
+                  <input type="hidden" name="user_id" value="{{ user.id }}">
+                  <button type="submit" class="btn btn-danger">🗑 حذف</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-    {% endfor %}
-    {% if not users %}
+    {% else %}
       <p style="text-align:center;color:#888;padding:20px;">مفيش مستخدمين لسه</p>
     {% endif %}
   </div>
 
   <!-- الأوراد -->
   <div class="card">
-    <h2>📋 الأوراد المطلوبة</h2>
+    <h2>📋 الأوراد ({{ wirds|length }})</h2>
     <form method="POST" style="margin-bottom:16px;">
       <input type="hidden" name="action" value="add_wird">
       <div class="form-row">
-        <input type="text" name="wird_name" placeholder="اسم الورد الجديد">
-        <button type="submit" class="btn btn-primary">إضافة ورد</button>
+        <input type="text" name="wird_name" placeholder="اسم الورد الجديد" style="flex:1;">
+        <button type="submit" class="btn btn-primary">➕ إضافة ورد</button>
       </div>
     </form>
-
     {% for wird in wirds %}
-    <div class="list-item">
-      <span class="item-name">{{ loop.index }}. {{ wird.name }}</span>
+    <div class="wird-item">
+      <span class="wird-name">{{ loop.index }}. {{ wird.name }}</span>
       <div class="edit-form">
-        <form method="POST" style="display:flex;gap:6px;flex-wrap:wrap;">
+        <form method="POST" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
           <input type="hidden" name="action" value="edit_wird">
           <input type="hidden" name="wird_id" value="{{ wird.id }}">
           <input type="text" name="wird_name" value="{{ wird.name }}" style="min-width:180px;">
-          <button type="submit" class="btn btn-edit">تعديل</button>
+          <button type="submit" class="btn btn-edit">✏️ تعديل</button>
         </form>
-        <form method="POST" onsubmit="return confirm('مسح الورد ده؟')">
+        <form method="POST" onsubmit="return confirm('حذف الورد؟')">
           <input type="hidden" name="action" value="delete_wird">
           <input type="hidden" name="wird_id" value="{{ wird.id }}">
-          <button type="submit" class="btn btn-danger">حذف</button>
+          <button type="submit" class="btn btn-danger">🗑</button>
         </form>
       </div>
     </div>
     {% endfor %}
   </div>
+
 </div>
+
+<script>
+function openModal(uid, uname, pw) {
+  document.getElementById('modalUserId').value   = uid;
+  document.getElementById('modalUsername').textContent = 'المستخدم: ' + uname;
+  document.getElementById('modalNewPw').value    = pw || '';
+  document.getElementById('pwModal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('pwModal').classList.remove('open');
+}
+document.getElementById('pwModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
 </body>
 </html>

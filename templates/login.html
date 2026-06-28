@@ -6,71 +6,18 @@
 <title>متابعة الأوراد - تسجيل الدخول</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .card {
-    background: #fff;
-    border-radius: 16px;
-    padding: 40px 36px;
-    width: 360px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  }
-  .logo {
-    text-align: center;
-    font-size: 48px;
-    margin-bottom: 8px;
-  }
-  h1 {
-    text-align: center;
-    color: #1a1a2e;
-    font-size: 20px;
-    margin-bottom: 6px;
-  }
-  .subtitle {
-    text-align: center;
-    color: #666;
-    font-size: 13px;
-    margin-bottom: 28px;
-  }
-  label {
-    display: block;
-    font-size: 14px;
-    color: #333;
-    margin-bottom: 6px;
-    font-weight: 600;
-  }
-  input {
-    width: 100%;
-    padding: 12px 14px;
-    border: 2px solid #e0e0e0;
-    border-radius: 10px;
-    font-size: 15px;
-    margin-bottom: 18px;
-    transition: border-color 0.2s;
-    direction: ltr;
-  }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .card { background: #fff; border-radius: 16px; padding: 40px 36px; width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .logo { text-align: center; font-size: 48px; margin-bottom: 8px; }
+  h1 { text-align: center; color: #1a1a2e; font-size: 20px; margin-bottom: 6px; }
+  .subtitle { text-align: center; color: #666; font-size: 13px; margin-bottom: 28px; }
+  label { display: block; font-size: 14px; color: #333; margin-bottom: 6px; font-weight: 600; }
+  input { width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 15px; margin-bottom: 18px; transition: border-color 0.2s; direction: ltr; }
   input:focus { outline: none; border-color: #0f3460; }
-  .btn {
-    width: 100%;
-    padding: 13px;
-    background: #0f3460;
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
+  .btn { width: 100%; padding: 13px; background: #0f3460; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
   .btn:hover { background: #1a4a8a; }
   .flash { padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; }
-  .flash.error { background: #fde8e8; color: #c0392b; }
+  .flash.error   { background: #fde8e8; color: #c0392b; }
   .flash.success { background: #e8f8e8; color: #1e8449; }
 </style>
 </head>
@@ -79,11 +26,9 @@
   <div class="logo">🌙</div>
   <h1>متابعة الأوراد</h1>
   <p class="subtitle">27 يونيو – 3 يوليو 2026</p>
-
   {% for msg in get_flashed_messages(with_categories=True) %}
     <div class="flash {{ msg[0] }}">{{ msg[1] }}</div>
   {% endfor %}
-
   <form method="POST">
     <label>اسم المستخدم</label>
     <input type="text" name="username" placeholder="username" required autocomplete="username">
