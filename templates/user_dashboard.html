@@ -14,60 +14,99 @@
   }
   .header h1 { font-size: 18px; }
   .header a { color: #aad4f5; font-size: 13px; text-decoration: none; }
-  .container { max-width: 680px; margin: 24px auto; padding: 0 16px; }
-  .date-badge {
-    background: #fff; border-radius: 12px; padding: 12px 18px;
-    margin-bottom: 20px; text-align: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    font-size: 15px; color: #333; font-weight: 600;
+  .container { max-width: 700px; margin: 24px auto; padding: 0 16px; }
+
+  /* تبويبات الأيام */
+  .days-nav {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-bottom: 20px;
   }
+  .day-btn {
+    padding: 8px 14px; border-radius: 8px; border: 2px solid #e0e0e0;
+    background: #fff; font-size: 13px; cursor: pointer;
+    transition: all 0.15s; color: #555; text-decoration: none;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .day-btn:hover { border-color: #0f3460; color: #0f3460; }
+  .day-btn.active { background: #0f3460; color: #fff; border-color: #0f3460; }
+  .day-btn.today-btn { border-color: #28a745; }
+  .day-btn.today-btn.active { background: #28a745; border-color: #28a745; }
+  .day-btn .day-name { font-weight: 700; font-size: 13px; }
+  .day-btn .day-date { font-size: 11px; opacity: 0.8; }
+  .day-btn .day-status { font-size: 10px; margin-top: 2px; }
+
   .flash { padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; }
   .flash.success { background: #d4edda; color: #155724; }
   .flash.error   { background: #f8d7da; color: #721c24; }
+
   .card {
     background: #fff; border-radius: 14px;
     padding: 20px; margin-bottom: 20px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.07);
   }
-  .card h2 { font-size: 16px; color: #1a1a2e; margin-bottom: 16px; border-bottom: 2px solid #f0f4f8; padding-bottom: 10px; }
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; border-bottom: 2px solid #f0f4f8; padding-bottom: 10px;
+    flex-wrap: wrap; gap: 8px;
+  }
+  .card-header h2 { font-size: 16px; color: #1a1a2e; }
+  .selected-date-badge {
+    background: #e8f0fe; color: #1a56db;
+    padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;
+  }
+  .selected-date-badge.today { background: #d4edda; color: #155724; }
+
   .wird-row {
     display: flex; align-items: center;
     justify-content: space-between;
     padding: 12px 0;
     border-bottom: 1px solid #f5f5f5;
-    gap: 10px;
-    flex-wrap: wrap;
+    gap: 10px; flex-wrap: wrap;
   }
-  .wird-name { flex: 1; font-size: 14px; color: #333; min-width: 160px; }
-  .options { display: flex; gap: 8px; }
+  .wird-name { flex: 1; font-size: 14px; color: #333; min-width: 150px; }
+  .options { display: flex; gap: 6px; }
   .opt-label {
-    display: flex; align-items: center; gap: 5px;
-    padding: 7px 12px; border-radius: 8px;
+    display: flex; align-items: center; gap: 4px;
+    padding: 6px 10px; border-radius: 8px;
     border: 2px solid #e0e0e0; cursor: pointer;
-    font-size: 13px; transition: all 0.15s;
-    user-select: none;
+    font-size: 12px; transition: all 0.15s; user-select: none;
   }
   .opt-label input { display: none; }
-  .opt-label.ada2:has(input:checked)   { background: #d4edda; border-color: #28a745; color: #155724; font-weight: 700; }
-  .opt-label.qadaa:has(input:checked)  { background: #fff3cd; border-color: #ffc107; color: #856404; font-weight: 700; }
-  .opt-label.gharama:has(input:checked){ background: #f8d7da; border-color: #dc3545; color: #721c24; font-weight: 700; }
+  .opt-label.ada2:has(input:checked)    { background: #d4edda; border-color: #28a745; color: #155724; font-weight: 700; }
+  .opt-label.qadaa:has(input:checked)   { background: #fff3cd; border-color: #ffc107; color: #856404; font-weight: 700; }
+  .opt-label.gharama:has(input:checked) { background: #f8d7da; border-color: #dc3545; color: #721c24; font-weight: 700; }
   .save-btn {
     width: 100%; padding: 14px;
     background: #0f3460; color: #fff;
     border: none; border-radius: 10px;
     font-size: 16px; font-weight: 700;
-    cursor: pointer; transition: background 0.2s;
-    margin-top: 8px;
+    cursor: pointer; transition: background 0.2s; margin-top: 8px;
   }
   .save-btn:hover { background: #1a4a8a; }
-  .out-period { text-align: center; padding: 30px; color: #888; font-size: 15px; }
-  .week-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .week-table th { background: #f0f4f8; padding: 8px 6px; text-align: center; }
-  .week-table td { padding: 6px; text-align: center; border-bottom: 1px solid #f0f0f0; }
-  .s-ada2    { color: #28a745; font-weight: 700; }
-  .s-qadaa   { color: #ffc107; font-weight: 700; }
-  .s-gharama { color: #dc3545; font-weight: 700; }
-  .s-miss    { color: #ccc; }
+
+  /* ملخص الأسبوع */
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
+    gap: 10px; margin-top: 4px;
+  }
+  .week-day-card {
+    border-radius: 10px; padding: 10px 8px; text-align: center;
+    border: 2px solid #e0e0e0; background: #fafafa;
+    cursor: pointer; transition: all 0.15s; text-decoration: none; color: inherit;
+    display: block;
+  }
+  .week-day-card:hover { border-color: #0f3460; transform: translateY(-2px); }
+  .week-day-card.selected { border-color: #0f3460; background: #e8f0fe; }
+  .week-day-card.today-card { border-color: #28a745; }
+  .week-day-card.complete  { background: #d4edda; border-color: #28a745; }
+  .week-day-card.partial   { background: #fff3cd; border-color: #ffc107; }
+  .week-day-card.has-gharama { background: #fde8e8; border-color: #dc3545; }
+  .week-day-card.empty     { background: #f5f5f5; border-color: #ddd; }
+  .wdc-name  { font-size: 12px; font-weight: 700; color: #333; }
+  .wdc-date  { font-size: 10px; color: #888; margin: 2px 0; }
+  .wdc-stats { font-size: 11px; margin-top: 4px; }
+  .wdc-pct   { font-size: 14px; font-weight: 700; color: #333; margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -81,69 +120,92 @@
     <div class="flash {{ cat }}">{{ msg }}</div>
   {% endfor %}
 
-  <div class="date-badge">
-    📅 اليوم: {{ today.strftime('%A %d/%m/%Y') }}
+  <!-- ملخص الأسبوع بالكروت -->
+  <div class="card">
+    <div class="card-header">
+      <h2>📅 أيام الأسبوع — اختار يوم تسجّل فيه</h2>
+    </div>
+    <div class="week-grid">
+      {% for day in stats %}
+        {% set total = wirds|length %}
+        {% set done = day.ada2 + day.qadaa + day.gharama %}
+        {% set pct = ((day.ada2 / total) * 100)|int if total > 0 else 0 %}
+        {% if done == 0 %}
+          {% set card_class = 'empty' %}
+        {% elif day.gharama > 0 %}
+          {% set card_class = 'has-gharama' %}
+        {% elif day.ada2 == total %}
+          {% set card_class = 'complete' %}
+        {% else %}
+          {% set card_class = 'partial' %}
+        {% endif %}
+        <a href="?date={{ day.date.strftime('%Y-%m-%d') }}"
+           class="week-day-card {{ card_class }}
+                  {% if day.date == selected_date %} selected{% endif %}
+                  {% if day.date == today %} today-card{% endif %}">
+          <div class="wdc-name">{{ day.date.strftime('%A')|replace('Monday','الاثنين')|replace('Tuesday','الثلاثاء')|replace('Wednesday','الأربعاء')|replace('Thursday','الخميس')|replace('Friday','الجمعة')|replace('Saturday','السبت')|replace('Sunday','الأحد') }}</div>
+          <div class="wdc-date">{{ day.date.strftime('%d/%m') }}</div>
+          {% if done > 0 %}
+            <div class="wdc-pct">{{ pct }}%</div>
+            <div class="wdc-stats">
+              {% if day.ada2 > 0 %}<span style="color:#28a745">✅{{ day.ada2 }}</span> {% endif %}
+              {% if day.qadaa > 0 %}<span style="color:#e6a817">⏰{{ day.qadaa }}</span> {% endif %}
+              {% if day.gharama > 0 %}<span style="color:#dc3545">💰{{ day.gharama }}</span> {% endif %}
+            </div>
+          {% else %}
+            <div class="wdc-pct" style="color:#ccc">—</div>
+          {% endif %}
+        </a>
+      {% endfor %}
+    </div>
   </div>
 
-  {% if in_period %}
+  <!-- نموذج تسجيل اليوم المختار -->
   <div class="card">
-    <h2>📝 سجّل أوراد اليوم</h2>
+    <div class="card-header">
+      <h2>📝 تسجيل الأوراد</h2>
+      <span class="selected-date-badge {% if selected_date == today %}today{% endif %}">
+        {% if selected_date == today %}📍 اليوم {% endif %}
+        {{ selected_date.strftime('%A')|replace('Monday','الاثنين')|replace('Tuesday','الثلاثاء')|replace('Wednesday','الأربعاء')|replace('Thursday','الخميس')|replace('Friday','الجمعة')|replace('Saturday','السبت')|replace('Sunday','الأحد') }}
+        {{ selected_date.strftime('%d/%m/%Y') }}
+      </span>
+    </div>
+
+    {% if in_period %}
     <form method="POST">
+      <input type="hidden" name="record_date" value="{{ selected_date.strftime('%Y-%m-%d') }}">
       {% for wird in wirds %}
       <div class="wird-row">
         <span class="wird-name">{{ loop.index }}. {{ wird.name }}</span>
         <div class="options">
           <label class="opt-label ada2">
             <input type="radio" name="wird_{{ wird.id }}" value="ada2"
-              {% if records_today.get(wird.id) == 'ada2' %}checked{% endif %}>
+              {% if records_selected.get(wird.id) == 'ada2' %}checked{% endif %}>
             ✅ أداء
           </label>
           <label class="opt-label qadaa">
             <input type="radio" name="wird_{{ wird.id }}" value="qadaa"
-              {% if records_today.get(wird.id) == 'qadaa' %}checked{% endif %}>
+              {% if records_selected.get(wird.id) == 'qadaa' %}checked{% endif %}>
             ⏰ قضاء
           </label>
           <label class="opt-label gharama">
             <input type="radio" name="wird_{{ wird.id }}" value="gharama"
-              {% if records_today.get(wird.id) == 'gharama' %}checked{% endif %}>
+              {% if records_selected.get(wird.id) == 'gharama' %}checked{% endif %}>
             💰 غرامة
           </label>
         </div>
       </div>
       {% endfor %}
-      <button type="submit" class="save-btn">💾 حفظ الأوراد</button>
+      <button type="submit" class="save-btn">💾 حفظ أوراد {{ selected_date.strftime('%d/%m') }}</button>
     </form>
-  </div>
-  {% else %}
-  <div class="card">
-    <div class="out-period">
+    {% else %}
+    <div style="text-align:center; padding:30px; color:#888;">
       ⏳ الأوراد بتبدأ من {{ START_DATE.strftime('%d/%m/%Y') }}
       وبتخلص في {{ END_DATE.strftime('%d/%m/%Y') }}
     </div>
+    {% endif %}
   </div>
-  {% endif %}
 
-  <div class="card">
-    <h2>📊 ملخص الأسبوع</h2>
-    <table class="week-table">
-      <tr>
-        <th>اليوم</th>
-        <th>أداء</th>
-        <th>قضاء</th>
-        <th>غرامة</th>
-        <th>ناقص</th>
-      </tr>
-      {% for day in stats %}
-      <tr>
-        <td>{{ day.date.strftime('%a %d/%m') }}</td>
-        <td class="s-ada2">{{ day.ada2 }}</td>
-        <td class="s-qadaa">{{ day.qadaa }}</td>
-        <td class="s-gharama">{{ day.gharama }}</td>
-        <td class="s-miss">{{ day.missing }}</td>
-      </tr>
-      {% endfor %}
-    </table>
-  </div>
 </div>
 </body>
 </html>

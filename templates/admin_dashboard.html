@@ -10,81 +10,298 @@
   .header { background: linear-gradient(135deg, #0f3460, #16213e); color: #fff; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
   .header h1 { font-size: 18px; }
   .header a { color: #aad4f5; font-size: 13px; text-decoration: none; }
-  .container { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+  .container { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+
+  /* تبويبات عرض */
+  .view-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .view-tab {
+    padding: 10px 20px; border-radius: 10px; border: 2px solid #e0e0e0;
+    background: #fff; font-size: 14px; cursor: pointer;
+    transition: all 0.15s; color: #555; font-weight: 600;
+  }
+  .view-tab.active { background: #0f3460; color: #fff; border-color: #0f3460; }
+
   .card { background: #fff; border-radius: 14px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
-  .card h2 { font-size: 16px; color: #1a1a2e; margin-bottom: 16px; }
-  .user-block { border: 1px solid #e8e8e8; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .card h2 { font-size: 16px; color: #1a1a2e; margin-bottom: 16px; border-bottom: 2px solid #f0f4f8; padding-bottom: 10px; }
+
+  /* ── تقرير إجمالي ── */
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-box { background: #f8f9fa; border-radius: 10px; padding: 14px; text-align: center; border: 1px solid #e8e8e8; }
+  .stat-box .stat-num { font-size: 28px; font-weight: 700; }
+  .stat-box .stat-lbl { font-size: 12px; color: #666; margin-top: 4px; }
+  .stat-box.ada2    .stat-num { color: #28a745; }
+  .stat-box.qadaa   .stat-num { color: #e6a817; }
+  .stat-box.gharama .stat-num { color: #dc3545; }
+  .stat-box.missing .stat-num { color: #aaa; }
+
+  /* كروت المستخدمين في التقرير الإجمالي */
+  .user-summary-card {
+    border: 1px solid #e8e8e8; border-radius: 12px; padding: 16px;
+    margin-bottom: 14px; transition: box-shadow 0.2s;
+  }
+  .user-summary-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
   .user-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
   .user-name { font-weight: 700; font-size: 15px; color: #1a1a2e; }
-  .badges { display: flex; gap: 8px; flex-wrap: wrap; }
+  .badges { display: flex; gap: 6px; flex-wrap: wrap; }
   .badge { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
   .badge.ada2    { background: #d4edda; color: #155724; }
   .badge.qadaa   { background: #fff3cd; color: #856404; }
   .badge.gharama { background: #f8d7da; color: #721c24; }
   .badge.missing { background: #f0f0f0; color: #666; }
-  .badge.pct     { background: #e8f0fe; color: #1a56db; }
-  .progress-bar { height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
-  .progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  th { background: #f0f4f8; padding: 8px 6px; text-align: center; }
-  td { padding: 6px; text-align: center; border-bottom: 1px solid #f5f5f5; }
-  .s-ada2    { color: #28a745; font-weight: 700; }
-  .s-qadaa   { color: #e6a817; font-weight: 700; }
-  .s-gharama { color: #dc3545; font-weight: 700; }
+  .badge.pct     { background: #e8f0fe; color: #1a56db; font-size: 13px; }
+  .progress-bar { height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; margin-bottom: 12px; }
+  .progress-fill { height: 100%; border-radius: 5px; transition: width 0.5s; }
+
+  /* جدول أيام المستخدم */
+  .days-mini { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 10px; }
+  .day-mini {
+    border-radius: 8px; padding: 6px 4px; text-align: center;
+    font-size: 11px; border: 1px solid #e0e0e0;
+  }
+  .day-mini .dm-name { font-weight: 600; color: #555; font-size: 10px; }
+  .day-mini .dm-date { color: #888; font-size: 10px; }
+  .day-mini .dm-ada2    { color: #28a745; font-weight: 700; }
+  .day-mini .dm-qadaa   { color: #e6a817; font-weight: 700; }
+  .day-mini .dm-gharama { color: #dc3545; font-weight: 700; }
+  .day-mini.complete  { background: #d4edda; border-color: #28a745; }
+  .day-mini.partial   { background: #fff9e6; border-color: #ffc107; }
+  .day-mini.has-gh    { background: #fde8e8; border-color: #dc3545; }
+  .day-mini.empty     { background: #f8f8f8; }
+
+  /* ── تقرير يومي ── */
+  .day-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .day-tab {
+    padding: 8px 14px; border-radius: 8px; border: 2px solid #e0e0e0;
+    background: #fff; font-size: 12px; cursor: pointer;
+    transition: all 0.15s; color: #555; text-align: center;
+  }
+  .day-tab:hover { border-color: #0f3460; }
+  .day-tab.active { background: #0f3460; color: #fff; border-color: #0f3460; }
+  .day-tab .dt-name { font-weight: 700; font-size: 12px; }
+  .day-tab .dt-date { font-size: 10px; opacity: 0.8; }
+
+  /* جدول المستخدمين في يوم معين */
+  .daily-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .daily-table th { background: #f0f4f8; padding: 10px 8px; text-align: center; font-size: 12px; }
+  .daily-table th:first-child { text-align: right; }
+  .daily-table td { padding: 10px 8px; border-bottom: 1px solid #f5f5f5; text-align: center; vertical-align: middle; }
+  .daily-table td:first-child { text-align: right; font-weight: 600; color: #1a1a2e; }
+  .daily-table tr:hover { background: #fafafa; }
+  .s-ada2    { color: #28a745; font-size: 16px; }
+  .s-qadaa   { color: #e6a817; font-size: 16px; }
+  .s-gharama { color: #dc3545; font-size: 16px; }
+  .s-miss    { color: #ddd; font-size: 14px; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .total-row { background: #f0f4f8 !important; font-weight: 700; }
+  .total-row td { border-top: 2px solid #d0d8e4 !important; }
 </style>
 </head>
 <body>
 <div class="header">
-  <h1>📊 تقرير الشباب</h1>
+  <h1>📊 لوحة تقارير الأدمن</h1>
   <a href="/logout">خروج ↩</a>
 </div>
-<div class="container">
-  <div class="card">
-    <h2>🗓️ الفترة: {{ START_DATE.strftime('%d/%m/%Y') }} – {{ END_DATE.strftime('%d/%m/%Y') }}</h2>
 
-    {% for user in report %}
-    <div class="user-block">
-      <div class="user-header">
-        <span class="user-name">👤 {{ user.username }}</span>
-        <div class="badges">
-          <span class="badge ada2">أداء: {{ user.total_ada2 }}</span>
-          <span class="badge qadaa">قضاء: {{ user.total_qadaa }}</span>
-          <span class="badge gharama">غرامات: {{ user.total_gharama }}</span>
-          <span class="badge missing">ناقص: {{ user.total_missing }}</span>
-          <span class="badge pct">{{ user.completion_pct }}% إتمام</span>
+<div class="container">
+
+  <!-- تبويبات العرض -->
+  <div class="view-tabs">
+    <button class="view-tab active" onclick="showView('overall')">📈 التقرير الإجمالي</button>
+    <button class="view-tab" onclick="showView('daily')">📅 التقارير اليومية</button>
+  </div>
+
+  <!-- ══════════════════════════════ -->
+  <!-- التقرير الإجمالي              -->
+  <!-- ══════════════════════════════ -->
+  <div id="view-overall" class="section active">
+
+    <!-- إحصائيات كلية -->
+    <div class="card">
+      <h2>📊 إحصائيات الفترة كاملة ({{ START_DATE.strftime('%d/%m') }} – {{ END_DATE.strftime('%d/%m/%Y') }})</h2>
+      <div class="summary-grid">
+        <div class="stat-box ada2">
+          <div class="stat-num">{{ report|sum(attribute='total_ada2') }}</div>
+          <div class="stat-lbl">✅ إجمالي أداء</div>
+        </div>
+        <div class="stat-box qadaa">
+          <div class="stat-num">{{ report|sum(attribute='total_qadaa') }}</div>
+          <div class="stat-lbl">⏰ إجمالي قضاء</div>
+        </div>
+        <div class="stat-box gharama">
+          <div class="stat-num">{{ report|sum(attribute='total_gharama') }}</div>
+          <div class="stat-lbl">💰 إجمالي غرامات</div>
+        </div>
+        <div class="stat-box missing">
+          <div class="stat-num">{{ report|sum(attribute='total_missing') }}</div>
+          <div class="stat-lbl">❌ إجمالي ناقص</div>
         </div>
       </div>
-      <div class="progress-bar">
-        <div class="progress-fill"
-             style="width: {{ user.completion_pct }}%;
-                    background: {% if user.completion_pct >= 80 %}#28a745{% elif user.completion_pct >= 50 %}#ffc107{% else %}#dc3545{% endif %}">
+    </div>
+
+    <!-- تفاصيل كل مستخدم -->
+    <div class="card">
+      <h2>👥 تفاصيل كل شخص</h2>
+      {% for user in report %}
+      <div class="user-summary-card">
+        <div class="user-header">
+          <span class="user-name">👤 {{ user.username }}</span>
+          <div class="badges">
+            <span class="badge ada2">✅ {{ user.total_ada2 }} أداء</span>
+            <span class="badge qadaa">⏰ {{ user.total_qadaa }} قضاء</span>
+            <span class="badge gharama">💰 {{ user.total_gharama }} غرامة</span>
+            <span class="badge missing">❌ {{ user.total_missing }} ناقص</span>
+            <span class="badge pct">{{ user.completion_pct }}% إتمام</span>
+          </div>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill"
+               style="width: {{ user.completion_pct }}%;
+                      background: {% if user.completion_pct >= 80 %}#28a745{% elif user.completion_pct >= 50 %}#ffc107{% else %}#dc3545{% endif %}">
+          </div>
+        </div>
+        <!-- أيام الأسبوع مصغرة -->
+        <div class="days-mini">
+          {% for day in user.days %}
+            {% set total_w = wirds|length %}
+            {% set done = day.ada2 + day.qadaa + day.gharama %}
+            {% if done == 0 %}{% set dc = 'empty' %}
+            {% elif day.gharama > 0 %}{% set dc = 'has-gh' %}
+            {% elif day.ada2 == total_w %}{% set dc = 'complete' %}
+            {% else %}{% set dc = 'partial' %}{% endif %}
+            <div class="day-mini {{ dc }}">
+              <div class="dm-name">{{ day.date.strftime('%a')|replace('Mon','الاثنين')|replace('Tue','الثلاثاء')|replace('Wed','الأربعاء')|replace('Thu','الخميس')|replace('Fri','الجمعة')|replace('Sat','السبت')|replace('Sun','الأحد') }}</div>
+              <div class="dm-date">{{ day.date.strftime('%d/%m') }}</div>
+              {% if done > 0 %}
+                {% if day.ada2 > 0 %}<div class="dm-ada2">✅{{ day.ada2 }}</div>{% endif %}
+                {% if day.qadaa > 0 %}<div class="dm-qadaa">⏰{{ day.qadaa }}</div>{% endif %}
+                {% if day.gharama > 0 %}<div class="dm-gharama">💰{{ day.gharama }}</div>{% endif %}
+              {% else %}
+                <div style="color:#ccc;font-size:12px;margin-top:4px;">—</div>
+              {% endif %}
+            </div>
+          {% endfor %}
         </div>
       </div>
-      <table>
-        <tr>
-          <th>اليوم</th>
-          <th>أداء</th>
-          <th>قضاء</th>
-          <th>غرامة</th>
-          <th>ناقص</th>
-        </tr>
-        {% for day in user.days %}
-        <tr>
-          <td>{{ day.date.strftime('%a %d/%m') }}</td>
-          <td class="s-ada2">{{ day.ada2 }}</td>
-          <td class="s-qadaa">{{ day.qadaa }}</td>
-          <td class="s-gharama">{{ day.gharama }}</td>
-          <td>{{ day.missing }}</td>
-        </tr>
-        {% endfor %}
-      </table>
+      {% endfor %}
+      {% if not report %}
+        <p style="text-align:center; color:#888; padding:30px;">مفيش مستخدمين لسه</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════ -->
+  <!-- التقارير اليومية              -->
+  <!-- ══════════════════════════════ -->
+  <div id="view-daily" class="section">
+
+    <!-- تبويبات الأيام -->
+    <div class="day-tabs">
+      {% for day_report in daily_reports %}
+      <button class="day-tab {% if loop.first %}active{% endif %}"
+              onclick="showDay('day-{{ loop.index }}', this)">
+        <div class="dt-name">{{ day_report.date.strftime('%A')|replace('Monday','الاثنين')|replace('Tuesday','الثلاثاء')|replace('Wednesday','الأربعاء')|replace('Thursday','الخميس')|replace('Friday','الجمعة')|replace('Saturday','السبت')|replace('Sunday','الأحد') }}</div>
+        <div class="dt-date">{{ day_report.date.strftime('%d/%m') }}</div>
+      </button>
+      {% endfor %}
+    </div>
+
+    <!-- تفاصيل كل يوم -->
+    {% for day_report in daily_reports %}
+    <div id="day-{{ loop.index }}" class="day-section {% if loop.first %}active{% endif %}" style="{% if not loop.first %}display:none{% endif %}">
+      <div class="card">
+        <h2>
+          📅 {{ day_report.date.strftime('%A')|replace('Monday','الاثنين')|replace('Tuesday','الثلاثاء')|replace('Wednesday','الأربعاء')|replace('Thursday','الخميس')|replace('Friday','الجمعة')|replace('Saturday','السبت')|replace('Sunday','الأحد') }}
+          {{ day_report.date.strftime('%d/%m/%Y') }}
+        </h2>
+
+        <!-- إحصائيات اليوم -->
+        <div class="summary-grid" style="margin-bottom:16px;">
+          <div class="stat-box ada2">
+            <div class="stat-num">{{ day_report.total_ada2 }}</div>
+            <div class="stat-lbl">✅ أداء</div>
+          </div>
+          <div class="stat-box qadaa">
+            <div class="stat-num">{{ day_report.total_qadaa }}</div>
+            <div class="stat-lbl">⏰ قضاء</div>
+          </div>
+          <div class="stat-box gharama">
+            <div class="stat-num">{{ day_report.total_gharama }}</div>
+            <div class="stat-lbl">💰 غرامة</div>
+          </div>
+          <div class="stat-box missing">
+            <div class="stat-num">{{ day_report.total_missing }}</div>
+            <div class="stat-lbl">❌ ناقص</div>
+          </div>
+        </div>
+
+        <!-- جدول المستخدمين × الأوراد -->
+        <div style="overflow-x:auto;">
+          <table class="daily-table">
+            <thead>
+              <tr>
+                <th style="min-width:100px;">المستخدم</th>
+                {% for wird in wirds %}
+                <th style="min-width:60px;font-size:11px;">{{ wird.name[:12] }}{% if wird.name|length > 12 %}…{% endif %}</th>
+                {% endfor %}
+                <th>الإجمالي</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user_day in day_report.users %}
+              <tr>
+                <td>{{ user_day.username }}</td>
+                {% for wird in wirds %}
+                  {% set st = user_day.records.get(wird.id, '') %}
+                  <td>
+                    {% if st == 'ada2' %}<span class="s-ada2">✅</span>
+                    {% elif st == 'qadaa' %}<span class="s-qadaa">⏰</span>
+                    {% elif st == 'gharama' %}<span class="s-gharama">💰</span>
+                    {% else %}<span class="s-miss">—</span>{% endif %}
+                  </td>
+                {% endfor %}
+                <td>
+                  <span style="color:#28a745;font-weight:700;">{{ user_day.ada2 }}</span>/
+                  <span style="color:#e6a817;">{{ user_day.qadaa }}</span>/
+                  <span style="color:#dc3545;">{{ user_day.gharama }}</span>
+                </td>
+              </tr>
+              {% endfor %}
+              <!-- صف الإجمالي -->
+              <tr class="total-row">
+                <td>📊 الإجمالي</td>
+                {% for wird in wirds %}
+                  {% set w_ada2 = day_report.users|selectattr('records.' ~ wird.id, 'equalto', 'ada2')|list|length %}
+                  <td style="font-size:12px;color:#555;">{{ w_ada2 }}/{{ day_report.users|length }}</td>
+                {% endfor %}
+                <td style="color:#1a1a2e;">{{ day_report.users|length }} شخص</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
     {% endfor %}
 
-    {% if not report %}
-      <p style="text-align:center; color:#888; padding:30px;">مفيش مستخدمين لسه</p>
-    {% endif %}
-  </div>
+  </div><!-- end view-daily -->
+
 </div>
+
+<script>
+function showView(view) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  event.target.classList.add('active');
+}
+function showDay(dayId, btn) {
+  document.querySelectorAll('.day-section').forEach(s => s.style.display = 'none');
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(dayId).style.display = 'block';
+  btn.classList.add('active');
+}
+</script>
 </body>
 </html>
