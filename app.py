@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-import psycopg2
-import psycopg2.extras
+import pg8000
+import pg8000.native
 import os
 from datetime import date, timedelta
 from functools import wraps
@@ -33,7 +33,7 @@ DEFAULT_WIRDS = [
 # ────────────────────────────────────────────────────────────────
 
 def get_db():
-    conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+    conn = pg8000.connect(DATABASE_URL)
     return conn
 
 def init_db():
