@@ -1,13 +1,18 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-import sqlite3, os
+import psycopg2
+import psycopg2.extras
+import os
 from datetime import date, timedelta
 from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = "wird_tracker_secret_key_2026"
 
-DB = "wird.db"
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+START_DATE = date(2026, 6, 27)
+END_DATE   = date(2026, 7, 3)
 
 DEFAULT_WIRDS = [
     "سنة المغرب البعدية ركعتان",
@@ -22,17 +27,13 @@ DEFAULT_WIRDS = [
     "سنة الظهر البعدية ركعتان",
 ]
 
-START_DATE = date(2026, 6, 27)
-END_DATE   = date(2026, 7, 3)
-
 
 # ────────────────────────────────────────────────────────────────
 # قاعدة البيانات
 # ────────────────────────────────────────────────────────────────
 
 def get_db():
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
     return conn
 
 def init_db():
@@ -41,16 +42,17 @@ def init_db():
 
     c.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
+            plain_password TEXT NOT NULL DEFAULT '',
             role TEXT NOT NULL DEFAULT 'user'
         )
     """)
 
     c.execute("""
         CREATE TABLE IF NOT EXISTS wirds (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             order_num INTEGER NOT NULL DEFAULT 0,
             active INTEGER NOT NULL DEFAULT 1
@@ -59,29 +61,36 @@ def init_db():
 
     c.execute("""
         CREATE TABLE IF NOT EXISTS records (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL,
             wird_id INTEGER NOT NULL,
             record_date TEXT NOT NULL,
             status TEXT NOT NULL,
-            UNIQUE(user_id, wird_id, record_date),
-            FOREIGN KEY(user_id) REFERENCES users(id),
-            FOREIGN KEY(wird_id) REFERENCES wirds(id)
+            UNIQUE(user_id, wird_id, record_date)
         )
     """)
 
-    count = c.execute("SELECT COUNT(*) FROM wirds").fetchone()[0]
-    if count == 0:
-        for i, w in enumerate(DEFAULT_WIRDS):
-            c.execute("INSERT INTO wirds (name, order_num) VALUES (?, ?)", (w, i))
+    # أضف عمود plain_password لو مش موجود (للترقية)
+    c.execute("""
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS plain_password TEXT NOT NULL DEFAULT ''
+    """)
 
-    count = c.execute("SELECT COUNT(*) FROM users WHERE role='owner'").fetchone()[0]
-    if count == 0:
-        pw = generate_password_hash("owner123")
-        c.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                  ("owner", pw, "owner"))
+    # أضف الأوراد الافتراضية لو مفيش
+    c.execute("SELECT COUNT(*) as cnt FROM wirds")
+    if c.fetchone()["cnt"] == 0:
+        for i, w in enumerate(DEFAULT_WIRDS):
+            c.execute("INSERT INTO wirds (name, order_num) VALUES (%s, %s)", (w, i))
+
+    # أضف الـ owner لو مش موجود
+    c.execute("SELECT COUNT(*) as cnt FROM users WHERE role='owner'")
+    if c.fetchone()["cnt"] == 0:
+        c.execute(
+            "INSERT INTO users (username, password, plain_password, role) VALUES (%s, %s, %s, %s)",
+            ("owner", generate_password_hash("owner123"), "owner123", "owner")
+        )
 
     conn.commit()
+    c.close()
     conn.close()
 
 
@@ -110,7 +119,7 @@ def role_required(*roles):
 
 
 # ────────────────────────────────────────────────────────────────
-# Helper: اجيب كل أيام الفترة
+# Helpers
 # ────────────────────────────────────────────────────────────────
 
 def get_period_days():
@@ -120,14 +129,6 @@ def get_period_days():
         days.append(current)
         current += timedelta(days=1)
     return days
-
-def arabic_day(d):
-    names = {
-        'Monday': 'الاثنين', 'Tuesday': 'الثلاثاء',
-        'Wednesday': 'الأربعاء', 'Thursday': 'الخميس',
-        'Friday': 'الجمعة', 'Saturday': 'السبت', 'Sunday': 'الأحد'
-    }
-    return names.get(d.strftime('%A'), d.strftime('%A'))
 
 
 # ────────────────────────────────────────────────────────────────
@@ -153,12 +154,15 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
         conn = get_db()
-        user = conn.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+        c = conn.cursor()
+        c.execute("SELECT * FROM users WHERE username=%s", (username,))
+        user = c.fetchone()
+        c.close()
         conn.close()
         if user and check_password_hash(user["password"], password):
-            session["user_id"] = user["id"]
+            session["user_id"]  = user["id"]
             session["username"] = user["username"]
-            session["role"] = user["role"]
+            session["role"]     = user["role"]
             return redirect(url_for("index"))
         flash("اسم المستخدم أو كلمة السر غلط", "error")
     return render_template("login.html")
@@ -176,86 +180,101 @@ def logout():
 @login_required
 @role_required("user")
 def user_dashboard():
-    today = date.today()
-    period_days = get_period_days()
+    today        = date.today()
+    period_days  = get_period_days()
 
-    # اليوم المختار من الـ URL أو اليوم الحالي
+    # اليوم المختار
     selected_str = request.args.get("date", "")
     try:
         selected_date = date.fromisoformat(selected_str)
-        # تأكد إنه في فترة الأوراد
         if not (START_DATE <= selected_date <= END_DATE):
-            selected_date = max(START_DATE, min(today, END_DATE))
+            raise ValueError
     except ValueError:
-        # لو مفيش date في الـ URL، روح لأقرب يوم في الفترة
-        if today < START_DATE:
-            selected_date = START_DATE
-        elif today > END_DATE:
-            selected_date = END_DATE
-        else:
-            selected_date = today
-
-    in_period = True  # دايماً نعرض الفورم لأي يوم في الفترة
+        selected_date = max(START_DATE, min(today, END_DATE))
 
     conn = get_db()
-    wirds = conn.execute("SELECT * FROM wirds WHERE active=1 ORDER BY order_num").fetchall()
+    c    = conn.cursor()
+    c.execute("SELECT * FROM wirds WHERE active=1 ORDER BY order_num")
+    wirds = c.fetchall()
 
+    # حفظ الأوراد
     if request.method == "POST":
-        # اليوم المختار من الفورم
-        rec_date_str = request.form.get("record_date", selected_date.isoformat())
-        try:
-            rec_date = date.fromisoformat(rec_date_str)
-            if not (START_DATE <= rec_date <= END_DATE):
-                rec_date = selected_date
-        except ValueError:
-            rec_date = selected_date
+        action = request.form.get("action", "save_wirds")
 
-        for wird in wirds:
-            status = request.form.get(f"wird_{wird['id']}")
-            if status in ("ada2", "qadaa", "gharama"):
-                conn.execute("""
-                    INSERT INTO records (user_id, wird_id, record_date, status)
-                    VALUES (?, ?, ?, ?)
-                    ON CONFLICT(user_id, wird_id, record_date)
-                    DO UPDATE SET status=excluded.status
-                """, (session["user_id"], wird["id"], rec_date.isoformat(), status))
-        conn.commit()
-        flash(f"تم حفظ أوراد {rec_date.strftime('%d/%m')} بنجاح ✅", "success")
-        return redirect(url_for("user_dashboard", date=rec_date.isoformat()))
+        if action == "change_password":
+            old_pw  = request.form.get("old_password", "")
+            new_pw  = request.form.get("new_password", "")
+            new_pw2 = request.form.get("new_password2", "")
+            c.execute("SELECT * FROM users WHERE id=%s", (session["user_id"],))
+            user = c.fetchone()
+            if not check_password_hash(user["password"], old_pw):
+                flash("كلمة السر القديمة غلط ❌", "error")
+            elif new_pw != new_pw2:
+                flash("كلمة السر الجديدة مش متطابقة ❌", "error")
+            elif len(new_pw) < 4:
+                flash("كلمة السر لازم تكون 4 حروف على الأقل", "error")
+            else:
+                c.execute(
+                    "UPDATE users SET password=%s, plain_password=%s WHERE id=%s",
+                    (generate_password_hash(new_pw), new_pw, session["user_id"])
+                )
+                conn.commit()
+                flash("تم تغيير كلمة السر بنجاح ✅", "success")
+
+        else:
+            rec_date_str = request.form.get("record_date", selected_date.isoformat())
+            try:
+                rec_date = date.fromisoformat(rec_date_str)
+                if not (START_DATE <= rec_date <= END_DATE):
+                    raise ValueError
+            except ValueError:
+                rec_date = selected_date
+
+            for wird in wirds:
+                status = request.form.get(f"wird_{wird['id']}")
+                if status in ("ada2", "qadaa", "gharama"):
+                    c.execute("""
+                        INSERT INTO records (user_id, wird_id, record_date, status)
+                        VALUES (%s, %s, %s, %s)
+                        ON CONFLICT (user_id, wird_id, record_date)
+                        DO UPDATE SET status=EXCLUDED.status
+                    """, (session["user_id"], wird["id"], rec_date.isoformat(), status))
+            conn.commit()
+            flash(f"تم حفظ أوراد {rec_date.strftime('%d/%m')} ✅", "success")
+            c.close()
+            conn.close()
+            return redirect(url_for("user_dashboard", date=rec_date.isoformat()))
 
     # سجلات اليوم المختار
-    records_selected = {}
-    rows = conn.execute("""
+    c.execute("""
         SELECT wird_id, status FROM records
-        WHERE user_id=? AND record_date=?
-    """, (session["user_id"], selected_date.isoformat())).fetchall()
-    for r in rows:
-        records_selected[r["wird_id"]] = r["status"]
+        WHERE user_id=%s AND record_date=%s
+    """, (session["user_id"], selected_date.isoformat()))
+    records_selected = {r["wird_id"]: r["status"] for r in c.fetchall()}
 
-    # إحصائيات كل أيام الفترة
+    # إحصائيات الأسبوع
     stats = []
     for d in period_days:
-        day_rows = conn.execute("""
+        c.execute("""
             SELECT wird_id, status FROM records
-            WHERE user_id=? AND record_date=?
-        """, (session["user_id"], d.isoformat())).fetchall()
-        day_rec = {r["wird_id"]: r["status"] for r in day_rows}
-        ada2    = sum(1 for v in day_rec.values() if v == "ada2")
-        qadaa   = sum(1 for v in day_rec.values() if v == "qadaa")
-        gharama = sum(1 for v in day_rec.values() if v == "gharama")
+            WHERE user_id=%s AND record_date=%s
+        """, (session["user_id"], d.isoformat()))
+        day_rec = {r["wird_id"]: r["status"] for r in c.fetchall()}
         stats.append({
-            "date": d,
+            "date":    d,
             "records": day_rec,
-            "ada2": ada2, "qadaa": qadaa, "gharama": gharama,
+            "ada2":    sum(1 for v in day_rec.values() if v == "ada2"),
+            "qadaa":   sum(1 for v in day_rec.values() if v == "qadaa"),
+            "gharama": sum(1 for v in day_rec.values() if v == "gharama"),
             "missing": len(wirds) - len(day_rec),
         })
 
+    c.close()
     conn.close()
     return render_template("user_dashboard.html",
                            wirds=wirds,
                            records_selected=records_selected,
                            selected_date=selected_date,
-                           in_period=in_period,
                            today=today,
                            stats=stats,
                            START_DATE=START_DATE,
@@ -269,89 +288,75 @@ def user_dashboard():
 @role_required("admin")
 def admin_dashboard():
     conn = get_db()
-    users = conn.execute("SELECT * FROM users WHERE role='user'").fetchall()
-    wirds = conn.execute("SELECT * FROM wirds WHERE active=1 ORDER BY order_num").fetchall()
+    c    = conn.cursor()
+    c.execute("SELECT * FROM users WHERE role='user'")
+    users = c.fetchall()
+    c.execute("SELECT * FROM wirds WHERE active=1 ORDER BY order_num")
+    wirds = c.fetchall()
     period_days = get_period_days()
 
-    # ── التقرير الإجمالي لكل مستخدم ──
+    # التقرير الإجمالي
     report = []
     for user in users:
         user_data = {"username": user["username"], "days": []}
         total_ada2 = total_qadaa = total_gharama = total_missing = 0
-
         for d in period_days:
-            rows = conn.execute("""
+            c.execute("""
                 SELECT wird_id, status FROM records
-                WHERE user_id=? AND record_date=?
-            """, (user["id"], d.isoformat())).fetchall()
-            day_rec = {r["wird_id"]: r["status"] for r in rows}
-
+                WHERE user_id=%s AND record_date=%s
+            """, (user["id"], d.isoformat()))
+            day_rec = {r["wird_id"]: r["status"] for r in c.fetchall()}
             ada2    = sum(1 for v in day_rec.values() if v == "ada2")
             qadaa   = sum(1 for v in day_rec.values() if v == "qadaa")
             gharama = sum(1 for v in day_rec.values() if v == "gharama")
             missing = len(wirds) - len(day_rec)
-
-            total_ada2    += ada2
-            total_qadaa   += qadaa
-            total_gharama += gharama
-            total_missing += missing
-
+            total_ada2 += ada2; total_qadaa += qadaa
+            total_gharama += gharama; total_missing += missing
             user_data["days"].append({
-                "date": d,
-                "records": day_rec,
+                "date": d, "records": day_rec,
                 "ada2": ada2, "qadaa": qadaa,
                 "gharama": gharama, "missing": missing,
             })
-
         total_wirds = len(wirds) * len(period_days)
-        user_data["total_ada2"]    = total_ada2
-        user_data["total_qadaa"]   = total_qadaa
-        user_data["total_gharama"] = total_gharama
-        user_data["total_missing"] = total_missing
-        user_data["completion_pct"] = round(total_ada2 / total_wirds * 100) if total_wirds else 0
+        user_data.update({
+            "total_ada2": total_ada2, "total_qadaa": total_qadaa,
+            "total_gharama": total_gharama, "total_missing": total_missing,
+            "completion_pct": round(total_ada2 / total_wirds * 100) if total_wirds else 0,
+        })
         report.append(user_data)
 
-    # ── التقارير اليومية ──
+    # التقارير اليومية
     daily_reports = []
     for d in period_days:
-        day_data = {
-            "date": d,
-            "users": [],
-            "total_ada2": 0, "total_qadaa": 0,
-            "total_gharama": 0, "total_missing": 0,
-        }
+        day_data = {"date": d, "users": [],
+                    "total_ada2": 0, "total_qadaa": 0,
+                    "total_gharama": 0, "total_missing": 0}
         for user in users:
-            rows = conn.execute("""
+            c.execute("""
                 SELECT wird_id, status FROM records
-                WHERE user_id=? AND record_date=?
-            """, (user["id"], d.isoformat())).fetchall()
-            day_rec = {r["wird_id"]: r["status"] for r in rows}
-
+                WHERE user_id=%s AND record_date=%s
+            """, (user["id"], d.isoformat()))
+            day_rec = {r["wird_id"]: r["status"] for r in c.fetchall()}
             ada2    = sum(1 for v in day_rec.values() if v == "ada2")
             qadaa   = sum(1 for v in day_rec.values() if v == "qadaa")
             gharama = sum(1 for v in day_rec.values() if v == "gharama")
             missing = len(wirds) - len(day_rec)
-
             day_data["users"].append({
-                "username": user["username"],
-                "records": day_rec,
+                "username": user["username"], "records": day_rec,
                 "ada2": ada2, "qadaa": qadaa,
                 "gharama": gharama, "missing": missing,
             })
-            day_data["total_ada2"]    += ada2
-            day_data["total_qadaa"]   += qadaa
+            day_data["total_ada2"] += ada2
+            day_data["total_qadaa"] += qadaa
             day_data["total_gharama"] += gharama
             day_data["total_missing"] += missing
-
         daily_reports.append(day_data)
 
+    c.close()
     conn.close()
     return render_template("admin_dashboard.html",
-                           report=report,
-                           daily_reports=daily_reports,
-                           wirds=wirds,
-                           START_DATE=START_DATE,
-                           END_DATE=END_DATE)
+                           report=report, daily_reports=daily_reports,
+                           wirds=wirds, START_DATE=START_DATE, END_DATE=END_DATE)
 
 
 # ──── صفحة صاحب النظام ────
@@ -361,6 +366,7 @@ def admin_dashboard():
 @role_required("owner")
 def owner_dashboard():
     conn = get_db()
+    c    = conn.cursor()
 
     if request.method == "POST":
         action = request.form.get("action")
@@ -371,30 +377,47 @@ def owner_dashboard():
             role  = request.form.get("role", "user")
             if uname and pw and role in ("user", "admin"):
                 try:
-                    conn.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                                 (uname, generate_password_hash(pw), role))
+                    c.execute(
+                        "INSERT INTO users (username, password, plain_password, role) VALUES (%s,%s,%s,%s)",
+                        (uname, generate_password_hash(pw), pw, role)
+                    )
                     conn.commit()
-                    flash(f"تم إضافة المستخدم '{uname}' بنجاح ✅", "success")
-                except sqlite3.IntegrityError:
-                    flash("اسم المستخدم ده موجود بالفعل", "error")
+                    flash(f"تم إضافة '{uname}' ✅", "success")
+                except psycopg2.errors.UniqueViolation:
+                    conn.rollback()
+                    flash("الاسم ده موجود بالفعل", "error")
 
         elif action == "delete_user":
             uid = request.form.get("user_id")
-            conn.execute("DELETE FROM users WHERE id=? AND role != 'owner'", (uid,))
+            c.execute("DELETE FROM users WHERE id=%s AND role != 'owner'", (uid,))
             conn.commit()
             flash("تم حذف المستخدم", "success")
+
+        elif action == "reset_password":
+            uid    = request.form.get("user_id")
+            new_pw = request.form.get("new_password", "").strip()
+            if new_pw and len(new_pw) >= 4:
+                c.execute(
+                    "UPDATE users SET password=%s, plain_password=%s WHERE id=%s AND role != 'owner'",
+                    (generate_password_hash(new_pw), new_pw, uid)
+                )
+                conn.commit()
+                flash("تم تغيير كلمة السر ✅", "success")
+            else:
+                flash("كلمة السر لازم تكون 4 حروف على الأقل", "error")
 
         elif action == "add_wird":
             wname = request.form.get("wird_name", "").strip()
             if wname:
-                max_order = conn.execute("SELECT MAX(order_num) FROM wirds").fetchone()[0] or 0
-                conn.execute("INSERT INTO wirds (name, order_num) VALUES (?, ?)", (wname, max_order + 1))
+                c.execute("SELECT MAX(order_num) as mx FROM wirds")
+                mx = c.fetchone()["mx"] or 0
+                c.execute("INSERT INTO wirds (name, order_num) VALUES (%s,%s)", (wname, mx + 1))
                 conn.commit()
-                flash(f"تم إضافة الورد '{wname}' ✅", "success")
+                flash(f"تم إضافة الورد ✅", "success")
 
         elif action == "delete_wird":
             wid = request.form.get("wird_id")
-            conn.execute("UPDATE wirds SET active=0 WHERE id=?", (wid,))
+            c.execute("UPDATE wirds SET active=0 WHERE id=%s", (wid,))
             conn.commit()
             flash("تم حذف الورد", "success")
 
@@ -402,15 +425,19 @@ def owner_dashboard():
             wid   = request.form.get("wird_id")
             wname = request.form.get("wird_name", "").strip()
             if wid and wname:
-                conn.execute("UPDATE wirds SET name=? WHERE id=?", (wname, wid))
+                c.execute("UPDATE wirds SET name=%s WHERE id=%s", (wname, wid))
                 conn.commit()
                 flash("تم تعديل الورد ✅", "success")
 
+        c.close()
         conn.close()
         return redirect(url_for("owner_dashboard"))
 
-    users = conn.execute("SELECT * FROM users WHERE role != 'owner' ORDER BY role, username").fetchall()
-    wirds = conn.execute("SELECT * FROM wirds WHERE active=1 ORDER BY order_num").fetchall()
+    c.execute("SELECT * FROM users WHERE role != 'owner' ORDER BY role, username")
+    users = c.fetchall()
+    c.execute("SELECT * FROM wirds WHERE active=1 ORDER BY order_num")
+    wirds = c.fetchall()
+    c.close()
     conn.close()
     return render_template("owner_dashboard.html", users=users, wirds=wirds)
 
