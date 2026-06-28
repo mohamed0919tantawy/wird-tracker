@@ -9,7 +9,6 @@ app.secret_key = "wird_tracker_secret_key_2026"
 
 DB = "wird.db"
 
-# قائمة الأوراد اليومية
 DEFAULT_WIRDS = [
     "سنة المغرب البعدية ركعتان",
     "سنة العشاء البعدية ركعتان",
@@ -71,13 +70,11 @@ def init_db():
         )
     """)
 
-    # أضف الأوراد الافتراضية إذا مفيش
     count = c.execute("SELECT COUNT(*) FROM wirds").fetchone()[0]
     if count == 0:
         for i, w in enumerate(DEFAULT_WIRDS):
             c.execute("INSERT INTO wirds (name, order_num) VALUES (?, ?)", (w, i))
 
-    # أضف حساب صاحب النظام إذا مفيش
     count = c.execute("SELECT COUNT(*) FROM users WHERE role='owner'").fetchone()[0]
     if count == 0:
         pw = generate_password_hash("owner123")
@@ -89,7 +86,7 @@ def init_db():
 
 
 # ────────────────────────────────────────────────────────────────
-# Decorators للصلاحيات
+# Decorators
 # ────────────────────────────────────────────────────────────────
 
 def login_required(f):
@@ -113,7 +110,28 @@ def role_required(*roles):
 
 
 # ────────────────────────────────────────────────────────────────
-# المسارات (Routes)
+# Helper: اجيب كل أيام الفترة
+# ────────────────────────────────────────────────────────────────
+
+def get_period_days():
+    days = []
+    current = START_DATE
+    while current <= END_DATE:
+        days.append(current)
+        current += timedelta(days=1)
+    return days
+
+def arabic_day(d):
+    names = {
+        'Monday': 'الاثنين', 'Tuesday': 'الثلاثاء',
+        'Wednesday': 'الأربعاء', 'Thursday': 'الخميس',
+        'Friday': 'الجمعة', 'Saturday': 'السبت', 'Sunday': 'الأحد'
+    }
+    return names.get(d.strftime('%A'), d.strftime('%A'))
+
+
+# ────────────────────────────────────────────────────────────────
+# Routes
 # ────────────────────────────────────────────────────────────────
 
 @app.route("/")
@@ -159,14 +177,39 @@ def logout():
 @role_required("user")
 def user_dashboard():
     today = date.today()
+    period_days = get_period_days()
 
-    # لو خارج فترة الأوراد
-    in_period = START_DATE <= today <= END_DATE
+    # اليوم المختار من الـ URL أو اليوم الحالي
+    selected_str = request.args.get("date", "")
+    try:
+        selected_date = date.fromisoformat(selected_str)
+        # تأكد إنه في فترة الأوراد
+        if not (START_DATE <= selected_date <= END_DATE):
+            selected_date = max(START_DATE, min(today, END_DATE))
+    except ValueError:
+        # لو مفيش date في الـ URL، روح لأقرب يوم في الفترة
+        if today < START_DATE:
+            selected_date = START_DATE
+        elif today > END_DATE:
+            selected_date = END_DATE
+        else:
+            selected_date = today
+
+    in_period = True  # دايماً نعرض الفورم لأي يوم في الفترة
 
     conn = get_db()
     wirds = conn.execute("SELECT * FROM wirds WHERE active=1 ORDER BY order_num").fetchall()
 
-    if request.method == "POST" and in_period:
+    if request.method == "POST":
+        # اليوم المختار من الفورم
+        rec_date_str = request.form.get("record_date", selected_date.isoformat())
+        try:
+            rec_date = date.fromisoformat(rec_date_str)
+            if not (START_DATE <= rec_date <= END_DATE):
+                rec_date = selected_date
+        except ValueError:
+            rec_date = selected_date
+
         for wird in wirds:
             status = request.form.get(f"wird_{wird['id']}")
             if status in ("ada2", "qadaa", "gharama"):
@@ -175,35 +218,43 @@ def user_dashboard():
                     VALUES (?, ?, ?, ?)
                     ON CONFLICT(user_id, wird_id, record_date)
                     DO UPDATE SET status=excluded.status
-                """, (session["user_id"], wird["id"], today.isoformat(), status))
+                """, (session["user_id"], wird["id"], rec_date.isoformat(), status))
         conn.commit()
-        flash("تم حفظ الأوراد بنجاح ✅", "success")
+        flash(f"تم حفظ أوراد {rec_date.strftime('%d/%m')} بنجاح ✅", "success")
+        return redirect(url_for("user_dashboard", date=rec_date.isoformat()))
 
-    # اجيب السجلات الحالية لليوم ده
-    records_today = {}
+    # سجلات اليوم المختار
+    records_selected = {}
     rows = conn.execute("""
         SELECT wird_id, status FROM records
         WHERE user_id=? AND record_date=?
-    """, (session["user_id"], today.isoformat())).fetchall()
+    """, (session["user_id"], selected_date.isoformat())).fetchall()
     for r in rows:
-        records_today[r["wird_id"]] = r["status"]
+        records_selected[r["wird_id"]] = r["status"]
 
-    # إحصائيات الأسبوع
+    # إحصائيات كل أيام الفترة
     stats = []
-    current = START_DATE
-    while current <= END_DATE:
-        day_records = conn.execute("""
-            SELECT w.name, r.status FROM records r
-            JOIN wirds w ON w.id=r.wird_id
-            WHERE r.user_id=? AND r.record_date=?
-        """, (session["user_id"], current.isoformat())).fetchall()
-        stats.append({"date": current, "records": day_records})
-        current += timedelta(days=1)
+    for d in period_days:
+        day_rows = conn.execute("""
+            SELECT wird_id, status FROM records
+            WHERE user_id=? AND record_date=?
+        """, (session["user_id"], d.isoformat())).fetchall()
+        day_rec = {r["wird_id"]: r["status"] for r in day_rows}
+        ada2    = sum(1 for v in day_rec.values() if v == "ada2")
+        qadaa   = sum(1 for v in day_rec.values() if v == "qadaa")
+        gharama = sum(1 for v in day_rec.values() if v == "gharama")
+        stats.append({
+            "date": d,
+            "records": day_rec,
+            "ada2": ada2, "qadaa": qadaa, "gharama": gharama,
+            "missing": len(wirds) - len(day_rec),
+        })
 
     conn.close()
     return render_template("user_dashboard.html",
                            wirds=wirds,
-                           records_today=records_today,
+                           records_selected=records_selected,
+                           selected_date=selected_date,
                            in_period=in_period,
                            today=today,
                            stats=stats,
@@ -220,54 +271,87 @@ def admin_dashboard():
     conn = get_db()
     users = conn.execute("SELECT * FROM users WHERE role='user'").fetchall()
     wirds = conn.execute("SELECT * FROM wirds WHERE active=1 ORDER BY order_num").fetchall()
+    period_days = get_period_days()
 
+    # ── التقرير الإجمالي لكل مستخدم ──
     report = []
     for user in users:
         user_data = {"username": user["username"], "days": []}
-        current = START_DATE
         total_ada2 = total_qadaa = total_gharama = total_missing = 0
 
-        while current <= END_DATE:
-            day_records = {}
+        for d in period_days:
             rows = conn.execute("""
                 SELECT wird_id, status FROM records
                 WHERE user_id=? AND record_date=?
-            """, (user["id"], current.isoformat())).fetchall()
-            for r in rows:
-                day_records[r["wird_id"]] = r["status"]
+            """, (user["id"], d.isoformat())).fetchall()
+            day_rec = {r["wird_id"]: r["status"] for r in rows}
 
-            day_ada2 = sum(1 for v in day_records.values() if v == "ada2")
-            day_qadaa = sum(1 for v in day_records.values() if v == "qadaa")
-            day_gharama = sum(1 for v in day_records.values() if v == "gharama")
-            day_missing = len(wirds) - len(day_records)
+            ada2    = sum(1 for v in day_rec.values() if v == "ada2")
+            qadaa   = sum(1 for v in day_rec.values() if v == "qadaa")
+            gharama = sum(1 for v in day_rec.values() if v == "gharama")
+            missing = len(wirds) - len(day_rec)
 
-            total_ada2 += day_ada2
-            total_qadaa += day_qadaa
-            total_gharama += day_gharama
-            total_missing += day_missing
+            total_ada2    += ada2
+            total_qadaa   += qadaa
+            total_gharama += gharama
+            total_missing += missing
 
             user_data["days"].append({
-                "date": current,
-                "records": day_records,
-                "ada2": day_ada2,
-                "qadaa": day_qadaa,
-                "gharama": day_gharama,
-                "missing": day_missing,
+                "date": d,
+                "records": day_rec,
+                "ada2": ada2, "qadaa": qadaa,
+                "gharama": gharama, "missing": missing,
             })
-            current += timedelta(days=1)
 
-        total_wirds = len(wirds) * 7
-        user_data["total_ada2"] = total_ada2
-        user_data["total_qadaa"] = total_qadaa
+        total_wirds = len(wirds) * len(period_days)
+        user_data["total_ada2"]    = total_ada2
+        user_data["total_qadaa"]   = total_qadaa
         user_data["total_gharama"] = total_gharama
         user_data["total_missing"] = total_missing
         user_data["completion_pct"] = round(total_ada2 / total_wirds * 100) if total_wirds else 0
         report.append(user_data)
 
+    # ── التقارير اليومية ──
+    daily_reports = []
+    for d in period_days:
+        day_data = {
+            "date": d,
+            "users": [],
+            "total_ada2": 0, "total_qadaa": 0,
+            "total_gharama": 0, "total_missing": 0,
+        }
+        for user in users:
+            rows = conn.execute("""
+                SELECT wird_id, status FROM records
+                WHERE user_id=? AND record_date=?
+            """, (user["id"], d.isoformat())).fetchall()
+            day_rec = {r["wird_id"]: r["status"] for r in rows}
+
+            ada2    = sum(1 for v in day_rec.values() if v == "ada2")
+            qadaa   = sum(1 for v in day_rec.values() if v == "qadaa")
+            gharama = sum(1 for v in day_rec.values() if v == "gharama")
+            missing = len(wirds) - len(day_rec)
+
+            day_data["users"].append({
+                "username": user["username"],
+                "records": day_rec,
+                "ada2": ada2, "qadaa": qadaa,
+                "gharama": gharama, "missing": missing,
+            })
+            day_data["total_ada2"]    += ada2
+            day_data["total_qadaa"]   += qadaa
+            day_data["total_gharama"] += gharama
+            day_data["total_missing"] += missing
+
+        daily_reports.append(day_data)
+
     conn.close()
     return render_template("admin_dashboard.html",
-                           report=report, wirds=wirds,
-                           START_DATE=START_DATE, END_DATE=END_DATE)
+                           report=report,
+                           daily_reports=daily_reports,
+                           wirds=wirds,
+                           START_DATE=START_DATE,
+                           END_DATE=END_DATE)
 
 
 # ──── صفحة صاحب النظام ────
@@ -278,7 +362,6 @@ def admin_dashboard():
 def owner_dashboard():
     conn = get_db()
 
-    # إضافة مستخدم
     if request.method == "POST":
         action = request.form.get("action")
 
