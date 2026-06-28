@@ -29,7 +29,7 @@ DEFAULT_WIRDS = [
 
 
 # ────────────────────────────────────────────────────────────────
-# قاعدة البيانات
+# قاعدة البيانات - pg8000.native
 # ────────────────────────────────────────────────────────────────
 
 def get_db():
@@ -44,34 +44,46 @@ def get_db():
     )
     return conn
 
-def row_to_dict(columns, row):
-    return dict(zip(columns, row))
-
-def rows_to_dicts(columns, rows):
-    return [row_to_dict(columns, r) for r in rows]
-
-def qone(conn, sql, params=()):
+def qone(conn, sql, params=None):
     """تنفيذ query وإرجاع صف واحد كـ dict"""
-    rows = conn.run(sql, *params)
+    if params:
+        rows = conn.run(sql, **{f"p{i+1}": v for i, v in enumerate(params)})
+    else:
+        rows = conn.run(sql)
+    if not rows:
+        return None
     cols = [c["name"] for c in conn.columns]
-    if rows:
-        return row_to_dict(cols, rows[0])
-    return None
+    return dict(zip(cols, rows[0]))
 
-def qall(conn, sql, params=()):
+def qall(conn, sql, params=None):
     """تنفيذ query وإرجاع كل الصفوف كـ list of dicts"""
-    rows = conn.run(sql, *params)
+    if params:
+        rows = conn.run(sql, **{f"p{i+1}": v for i, v in enumerate(params)})
+    else:
+        rows = conn.run(sql)
+    if not rows:
+        return []
     cols = [c["name"] for c in conn.columns]
-    return rows_to_dicts(cols, rows)
+    return [dict(zip(cols, r)) for r in rows]
 
-def qrun(conn, sql, params=()):
-    """تنفيذ query بدون إرجاع"""
-    conn.run(sql, *params)
+def qrun(conn, sql, params=None):
+    """تنفيذ query بدون إرجاع نتيجة"""
+    if params:
+        conn.run(sql, **{f"p{i+1}": v for i, v in enumerate(params)})
+    else:
+        conn.run(sql)
+
+# تحويل placeholders من :1,:2 لـ $p1,$p2
+def ph(sql):
+    """بدّل :1 :2 :3 ... بـ :p1 :p2 :p3 ..."""
+    import re
+    return re.sub(r':(\d+)', lambda m: f':p{m.group(1)}', sql)
+
 
 def init_db():
     conn = get_db()
 
-    qrun(conn, """
+    conn.run("""
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
@@ -81,7 +93,7 @@ def init_db():
         )
     """)
 
-    qrun(conn, """
+    conn.run("""
         CREATE TABLE IF NOT EXISTS wirds (
             id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
@@ -90,7 +102,7 @@ def init_db():
         )
     """)
 
-    qrun(conn, """
+    conn.run("""
         CREATE TABLE IF NOT EXISTS records (
             id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL,
@@ -102,20 +114,28 @@ def init_db():
     """)
 
     try:
-        qrun(conn, "ALTER TABLE users ADD COLUMN IF NOT EXISTS plain_password TEXT NOT NULL DEFAULT ''")
+        conn.run("ALTER TABLE users ADD COLUMN IF NOT EXISTS plain_password TEXT NOT NULL DEFAULT ''")
     except Exception:
         pass
 
-    r = qone(conn, "SELECT COUNT(*) as cnt FROM wirds")
-    if r and r["cnt"] == 0:
+    rows = conn.run("SELECT COUNT(*) as cnt FROM wirds")
+    cnt = rows[0][0] if rows else 0
+    if cnt == 0:
         for i, w in enumerate(DEFAULT_WIRDS):
-            qrun(conn, "INSERT INTO wirds (name, order_num) VALUES (:1, :2)", (w, i))
+            conn.run(
+                "INSERT INTO wirds (name, order_num) VALUES (:p1, :p2)",
+                p1=w, p2=i
+            )
 
-    r = qone(conn, "SELECT COUNT(*) as cnt FROM users WHERE role='owner'")
-    if r and r["cnt"] == 0:
-        qrun(conn,
-            "INSERT INTO users (username, password, plain_password, role) VALUES (:1,:2,:3,:4)",
-            ("owner", generate_password_hash("owner123"), "owner123", "owner")
+    rows = conn.run("SELECT COUNT(*) as cnt FROM users WHERE role='owner'")
+    cnt = rows[0][0] if rows else 0
+    if cnt == 0:
+        conn.run(
+            "INSERT INTO users (username, password, plain_password, role) VALUES (:p1,:p2,:p3,:p4)",
+            p1="owner",
+            p2=generate_password_hash("owner123"),
+            p3="owner123",
+            p4="owner"
         )
 
     conn.close()
@@ -166,9 +186,9 @@ def get_period_days():
 def index():
     if "user_id" in session:
         role = session.get("role")
-        if role == "owner": return redirect(url_for("owner_dashboard"))
+        if role == "owner":   return redirect(url_for("owner_dashboard"))
         elif role == "admin": return redirect(url_for("admin_dashboard"))
-        else: return redirect(url_for("user_dashboard"))
+        else:                 return redirect(url_for("user_dashboard"))
     return redirect(url_for("login"))
 
 
@@ -178,7 +198,7 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
         conn = get_db()
-        user = qone(conn, "SELECT * FROM users WHERE username=:1", (username,))
+        user = qone(conn, "SELECT * FROM users WHERE username=:p1", (username,))
         conn.close()
         if user and check_password_hash(user["password"], password):
             session["user_id"]  = user["id"]
@@ -222,7 +242,7 @@ def user_dashboard():
             old_pw  = request.form.get("old_password", "")
             new_pw  = request.form.get("new_password", "")
             new_pw2 = request.form.get("new_password2", "")
-            user = qone(conn, "SELECT * FROM users WHERE id=:1", (session["user_id"],))
+            user = qone(conn, "SELECT * FROM users WHERE id=:p1", (session["user_id"],))
             if not check_password_hash(user["password"], old_pw):
                 flash("كلمة السر القديمة غلط ❌", "error")
             elif new_pw != new_pw2:
@@ -231,10 +251,11 @@ def user_dashboard():
                 flash("كلمة السر لازم تكون 4 حروف على الأقل", "error")
             else:
                 qrun(conn,
-                    "UPDATE users SET password=:1, plain_password=:2 WHERE id=:3",
+                    "UPDATE users SET password=:p1, plain_password=:p2 WHERE id=:p3",
                     (generate_password_hash(new_pw), new_pw, session["user_id"])
                 )
                 flash("تم تغيير كلمة السر بنجاح ✅", "success")
+
         else:
             rec_date_str = request.form.get("record_date", selected_date.isoformat())
             try:
@@ -249,7 +270,7 @@ def user_dashboard():
                 if status in ("ada2", "qadaa", "gharama"):
                     qrun(conn, """
                         INSERT INTO records (user_id, wird_id, record_date, status)
-                        VALUES (:1, :2, :3, :4)
+                        VALUES (:p1, :p2, :p3, :p4)
                         ON CONFLICT (user_id, wird_id, record_date)
                         DO UPDATE SET status=EXCLUDED.status
                     """, (session["user_id"], wird["id"], rec_date.isoformat(), status))
@@ -257,18 +278,16 @@ def user_dashboard():
             conn.close()
             return redirect(url_for("user_dashboard", date=rec_date.isoformat()))
 
-    records_rows = qall(conn, """
-        SELECT wird_id, status FROM records
-        WHERE user_id=:1 AND record_date=:2
-    """, (session["user_id"], selected_date.isoformat()))
+    records_rows = qall(conn,
+        "SELECT wird_id, status FROM records WHERE user_id=:p1 AND record_date=:p2",
+        (session["user_id"], selected_date.isoformat()))
     records_selected = {r["wird_id"]: r["status"] for r in records_rows}
 
     stats = []
     for d in period_days:
-        day_rows = qall(conn, """
-            SELECT wird_id, status FROM records
-            WHERE user_id=:1 AND record_date=:2
-        """, (session["user_id"], d.isoformat()))
+        day_rows = qall(conn,
+            "SELECT wird_id, status FROM records WHERE user_id=:p1 AND record_date=:p2",
+            (session["user_id"], d.isoformat()))
         day_rec = {r["wird_id"]: r["status"] for r in day_rows}
         stats.append({
             "date":    d,
@@ -302,10 +321,9 @@ def admin_dashboard():
         user_data = {"username": user["username"], "days": []}
         total_ada2 = total_qadaa = total_gharama = total_missing = 0
         for d in period_days:
-            rows = qall(conn, """
-                SELECT wird_id, status FROM records
-                WHERE user_id=:1 AND record_date=:2
-            """, (user["id"], d.isoformat()))
+            rows = qall(conn,
+                "SELECT wird_id, status FROM records WHERE user_id=:p1 AND record_date=:p2",
+                (user["id"], d.isoformat()))
             day_rec = {r["wird_id"]: r["status"] for r in rows}
             ada2    = sum(1 for v in day_rec.values() if v == "ada2")
             qadaa   = sum(1 for v in day_rec.values() if v == "qadaa")
@@ -332,10 +350,9 @@ def admin_dashboard():
                     "total_ada2": 0, "total_qadaa": 0,
                     "total_gharama": 0, "total_missing": 0}
         for user in users:
-            rows = qall(conn, """
-                SELECT wird_id, status FROM records
-                WHERE user_id=:1 AND record_date=:2
-            """, (user["id"], d.isoformat()))
+            rows = qall(conn,
+                "SELECT wird_id, status FROM records WHERE user_id=:p1 AND record_date=:p2",
+                (user["id"], d.isoformat()))
             day_rec = {r["wird_id"]: r["status"] for r in rows}
             ada2    = sum(1 for v in day_rec.values() if v == "ada2")
             qadaa   = sum(1 for v in day_rec.values() if v == "qadaa")
@@ -346,8 +363,8 @@ def admin_dashboard():
                 "ada2": ada2, "qadaa": qadaa,
                 "gharama": gharama, "missing": missing,
             })
-            day_data["total_ada2"] += ada2
-            day_data["total_qadaa"] += qadaa
+            day_data["total_ada2"]    += ada2
+            day_data["total_qadaa"]   += qadaa
             day_data["total_gharama"] += gharama
             day_data["total_missing"] += missing
         daily_reports.append(day_data)
@@ -376,7 +393,7 @@ def owner_dashboard():
             if uname and pw and role in ("user", "admin"):
                 try:
                     qrun(conn,
-                        "INSERT INTO users (username, password, plain_password, role) VALUES (:1,:2,:3,:4)",
+                        "INSERT INTO users (username, password, plain_password, role) VALUES (:p1,:p2,:p3,:p4)",
                         (uname, generate_password_hash(pw), pw, role)
                     )
                     flash(f"تم إضافة '{uname}' ✅", "success")
@@ -385,7 +402,7 @@ def owner_dashboard():
 
         elif action == "delete_user":
             uid = request.form.get("user_id")
-            qrun(conn, "DELETE FROM users WHERE id=:1 AND role != 'owner'", (uid,))
+            qrun(conn, "DELETE FROM users WHERE id=:p1 AND role != 'owner'", (uid,))
             flash("تم حذف المستخدم", "success")
 
         elif action == "reset_password":
@@ -393,7 +410,7 @@ def owner_dashboard():
             new_pw = request.form.get("new_password", "").strip()
             if new_pw and len(new_pw) >= 4:
                 qrun(conn,
-                    "UPDATE users SET password=:1, plain_password=:2 WHERE id=:3 AND role != 'owner'",
+                    "UPDATE users SET password=:p1, plain_password=:p2 WHERE id=:p3 AND role != 'owner'",
                     (generate_password_hash(new_pw), new_pw, uid)
                 )
                 flash("تم تغيير كلمة السر ✅", "success")
@@ -403,21 +420,21 @@ def owner_dashboard():
         elif action == "add_wird":
             wname = request.form.get("wird_name", "").strip()
             if wname:
-                r = qone(conn, "SELECT MAX(order_num) as mx FROM wirds")
-                mx = r["mx"] if r and r["mx"] else 0
-                qrun(conn, "INSERT INTO wirds (name, order_num) VALUES (:1,:2)", (wname, mx + 1))
+                r  = qone(conn, "SELECT MAX(order_num) as mx FROM wirds")
+                mx = r["mx"] if r and r["mx"] is not None else 0
+                qrun(conn, "INSERT INTO wirds (name, order_num) VALUES (:p1,:p2)", (wname, mx + 1))
                 flash("تم إضافة الورد ✅", "success")
 
         elif action == "delete_wird":
             wid = request.form.get("wird_id")
-            qrun(conn, "UPDATE wirds SET active=0 WHERE id=:1", (wid,))
+            qrun(conn, "UPDATE wirds SET active=0 WHERE id=:p1", (wid,))
             flash("تم حذف الورد", "success")
 
         elif action == "edit_wird":
             wid   = request.form.get("wird_id")
             wname = request.form.get("wird_name", "").strip()
             if wid and wname:
-                qrun(conn, "UPDATE wirds SET name=:1 WHERE id=:2", (wname, wid))
+                qrun(conn, "UPDATE wirds SET name=:p1 WHERE id=:p2", (wname, wid))
                 flash("تم تعديل الورد ✅", "success")
 
         conn.close()
